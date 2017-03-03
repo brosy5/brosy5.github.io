@@ -1,0 +1,81 @@
+<!-- Ben Rosenkranz, Electoral Map -->
+    <!DOCTYPE html>
+    <html lang="en">
+        <head>
+            <meta charset="utf-8">
+            <title>D3 Test</title>
+            <script src="https://d3js.org/d3.v4.js"></script>
+
+        <meta charset="utf-8">
+        <style>
+            table {
+                border-collapse: collapse;
+                border: 1px white solid;
+                font: 12px sans-serif;
+            }
+
+            td {
+                border: 1px white solid;
+                padding: 0px;
+            }
+        </style>
+        </head>
+        <body>
+            <h1>Electoral Map</h1>
+           <script type="text/javascript">
+              d3.csv("LocationKey.csv", function(key) {
+                d3.tsv("election-results1.txt", function(data) {
+                    itemID = 1;
+                    var spacesBetween = 0;
+                    itemCounter = 1;
+                    //console.log(data);
+                        d3.select("body").append("div").html(function(d){
+                            var str = "<table>";
+                            var rowOn = 1;
+                            //Reset itemID
+                            for(var i = 0; i<8;i++){
+                                str += "<tr>"
+                                itemID = 1;
+                                key.forEach(function(k){
+                                    data.forEach(function(d){
+                                        if(k.Abbrev == d.Abbrev){
+                                        console.log(k.Abbrev);
+                                            if(spacesBetween == 0){
+                                                if(itemID <= 12 * rowOn && itemID > 12 * (rowOn - 1)){
+                                                        var totalElectoral = parseInt(d.ElectoralVotesTrump) + parseInt(d.ElectoralVotesClinton)
+                                                        str += "<td>"
+                                                        str += '<svg height="60" width="80"><rect width="60" height="80" style="fill:rgb(0,0,255);stroke-width:1;stroke:rgb(255,255,255)"></rect><text x="50%" y="50%" text-anchor="middle" font-family="Verdana" font-size="10" fill="white">' + d.Abbrev + "  " + totalElectoral + '</text></svg>'
+                                                        str += "</td>"
+                                                }else{
+                                                    //make itemID large to run out rest of data loop in order to start new loop
+                                                    //itemID = 100;
+                                                }
+                                                itemID++;
+                                            }else{
+                                                
+                                            }
+                                        }
+                                    });
+                                });
+                                rowOn ++;
+                                str+= "</tr>"
+                            }
+                            str+="</table>"
+                            return(str);
+                        });
+                    });
+                });
+
+               // "<table><tr> <td>" + variable + "</td><td>2</td><td>3</td></tr><tr> <td>1</td><td>2</td><td>3</td></tr><tr> <td>1</td><td>2</td><td>3</td></tr> </table>");
+
+
+            </script>
+
+
+
+
+
+
+
+        </body>
+    </html>

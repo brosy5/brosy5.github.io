@@ -1,0 +1,127 @@
+<!-- Ben Rosenkranz, Electoral Map -->
+    <!DOCTYPE html>
+    <html lang="en">
+        <head>
+            <meta charset="utf-8">
+            <title>Electoral Map</title>
+            <script src="https://d3js.org/d3.v4.js"></script>
+
+        <meta charset="utf-8">
+        <style>
+            table {
+                border-collapse: collapse;
+                border: 1px white solid;
+                font: 12px sans-serif;
+            }
+
+            td {
+                border: 1px white solid;
+                padding: 0px;
+            }
+            div.tooltip {   
+                position: absolute;         
+                text-align: center;         
+                width: 60px;                    
+                height: 30px;                   
+                padding: 2px;               
+                font: 12px sans-serif;      
+                background: lightsalmon;    
+                border: 0px;        
+                border-radius: 8px;         
+                pointer-events: none;           
+            }
+        </style>
+        </head>
+        <body>
+            <h1>Electoral Map</h1>
+           <script type="text/javascript">
+              d3.csv("LocationKey.csv", function(key) {
+                d3.tsv("election-results1.txt", function(data) {
+                    itemID = 1;
+                    var spacesBetween = 0;
+                    itemCounter = 1;
+                    var spacesNewRow = 0;
+                    var statesDrawnTotal = 0;
+                    //console.log(data);
+                        d3.select("body").append("div").html(function(d){
+                            var str = "<table>";
+                            var rowOn = 1;
+
+                            //Reset itemID
+                            for(var i = 0; i<8;i++){
+                                var statesIterated = 0;
+                                str += "<tr>"
+                                //Makes sure we don't just print the first states over and over again
+                                //Counts up all the states so we only print the ones that belong in each row
+                                itemID = 1;
+                                var boxesDrawnCurrentRow = 0;
+                                key.forEach(function(k){
+                                    data.forEach(function(d){
+                                       //Print any boxes that go before the map starts
+                                        //Order them the same as the states
+                                        if(k.Abbrev == d.Abbrev){
+                                            statesIterated++;
+                                            //Only go in this loop if we need to draw this state, this row
+                                            if(statesIterated - statesDrawnTotal == 1 && boxesDrawnCurrentRow < 12){
+                                                statesDrawnTotal++;
+                                                var spacesAfterNewRow = k.spacesAfterNewRow;
+                                                var spacesAfterSameRow = k.spacesAfterSameRow
+                                                //Draw any spaces that start the row
+                                                while(spacesNewRow > 0){
+                                                    str += "<td>"
+                                                    str += '<svg height="60" width="80"><rect width="60" height="80" style="fill:rgb(2558,255,255);stroke-width:1;stroke:rgb(255,255,255)"></rect></svg>'
+                                                    str += "</td>"      
+                                                    spacesNewRow = spacesNewRow - 1;
+                                                    boxesDrawnCurrentRow++;
+                                                }
+                                                //Draw state box with electoral votes
+                                                    var totalElectoral = parseInt(d.ElectoralVotesTrump) + parseInt(d.ElectoralVotesClinton)
+                                                    console.log((d.electoralVotesClinton))
+                                                    str += "<td>"
+                                                    if(d.ElectoralVotesTrump > d.ElectoralVotesClinton){
+                                                        str += '<svg height="60" width="80"><rect width="60" height="80" style="fill:rgb(255,0,0);stroke-width:1;stroke:rgb(255,255,255)"></rect><text x="50%" y="50%" text-anchor="middle" font-family="Verdana" font-size="10" fill="white">' + d.Abbrev + "  " + totalElectoral + '</text></svg>'
+                                                    }else if(d.ElectoralVotesTrump < d.ElectoralVotesClinton){
+                                                        str += '<svg height="60" width="80"><rect width="60" height="80" style="fill:rgb(0,0,255);stroke-width:1;stroke:rgb(255,255,255)"></rect><text x="50%" y="50%" text-anchor="middle" font-family="Verdana" font-size="10" fill="white">' + d.Abbrev + "  " + totalElectoral + '</text></svg>'   
+                                                    }else{
+                                                        str += '<svg height="60" width="80"><rect width="60" height="80" style="fill:rgb(160,160,160);stroke-width:1;stroke:rgb(255,255,255)"></rect><text x="50%" y="50%" text-anchor="middle" font-family="Verdana" font-size="10" fill="white">' + d.Abbrev + "  " + totalElectoral + '</text></svg>'    
+                                                    }
+                                                    
+                                                    str += "</td>"
+                                                    boxesDrawnCurrentRow++;
+
+                                                //Draw any spaces that come after current state
+                                                 while(spacesAfterSameRow > 0){
+                                                    str += "<td>"
+                                                    str += '<svg height="60" width="80"><rect width="60" height="80" style="fill:rgb(255,255,255);stroke-width:1;stroke:rgb(255,255,255)"></rect></svg>'
+                                                    str += "</td>"      
+                                                    spacesAfterSameRow = spacesAfterSameRow - 1;
+                                                    boxesDrawnCurrentRow++;
+                                                }
+                                                spacesNewRow = spacesAfterNewRow;
+                                            }
+                                        }
+
+                                    });
+                                });
+                                rowOn ++;
+                                str+= "</tr>"
+                            }
+                            str+="</table>"
+                            return(str);
+                        });
+                    });
+                });
+
+               // "<table><tr> <td>" + variable + "</td><td>2</td><td>3</td></tr><tr> <td>1</td><td>2</td><td>3</td></tr><tr> <td>1</td><td>2</td><td>3</td></tr> </table>");
+
+
+            </script>
+
+
+
+
+
+
+
+        </body>
+    </html>
