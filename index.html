@@ -137,7 +137,7 @@
                 yearSelected = yearSelected.value;
             d3.select("#mapTable").remove();
               d3.csv("LocationKey.csv", function(key) {               
-                 d3.csv("election-results-all-years/election-results-" + yearSelected + ".csv", function(data) {
+                 d3.csv("election-results-" + yearSelected + ".csv", function(data) {
 
                // d3.tsv("election-results-all-years/election-results - " + year + ".txt", function(data) {
                     itemID = 1;
