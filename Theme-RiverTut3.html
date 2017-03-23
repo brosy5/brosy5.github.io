@@ -1,0 +1,302 @@
+<!--   
+  Sources:
+    http://d3-wiki.readthedocs.io/zh_CN/master/Stack-Layout/
+    https://github.com/d3/d3-3.x-api-reference/blob/master/Stack-Layout.md
+    https://bl.ocks.org/mbostock/4060954
+    http://bl.ocks.org/WillTurman/4631136
+    https://www.dashingd3js.com/svg-paths-and-d3js
+    http://learnjsdata.com/group_data.html
+-->
+
+<!DOCTYPE html>
+<meta charset="utf-8">
+<style>
+
+body {
+  font: 10px sans-serif;
+}
+
+div.tooltip {   
+    position: absolute;         
+    text-align: center;         
+    width: 100px;                    
+    height: 30px;                                 
+    font: 9px sans-serif;   
+    color: black;   
+    background:  LightGrey;          
+    border-radius: 1px;         
+}
+
+.barchart div {
+  font: 10px sans-serif;
+  background-color: steelblue;
+  text-align: right;
+  padding: 3px;
+  margin: 1px;
+  color: white;
+}
+
+.chart { 
+  background: #fff;
+}
+
+p {
+  font: 12px helvetica;
+  text-align:center; 
+  vertical-align: middle;
+}
+
+.axis path, .axis line {
+  fill: none;
+  stroke: black;
+  stroke-width: 3px;
+}
+table {
+    border-collapse: collapse;
+    border: 1px black solid;
+    font: 12px sans-serif;
+    padding:1px;
+    border-collapse: collapse;
+    text-align:center; 
+    vertical-align: middle;
+}
+
+table, th, td {
+    border: 1px solid black;
+    text-align: center;
+    text-align:center; 
+    vertical-align: middle;
+}
+
+button {
+  position: absolute;
+  right: 50px;
+  top: 10px;
+}
+
+</style>
+<head>
+   <h1>MLB Team Season Home Run Totals</h1>
+   <h2>1985 - 2016</h2>
+  <div id="legend" align = "center">
+     <h3> Data shows home runs per team by year</h3>
+     <table>
+        <tr>
+          <td text-align="center", bgcolor="#f43f3f"> <font color = "white">STL</td> 
+          <td text-align="center", bgcolor="#848383"> <font color = "white">CWS</td>            
+          <td text-align="center", bgcolor="#0a0000"> <font color = "white">NYY</td>  
+          <td text-align="center", bgcolor="#f42734"> <font color = "white">BOS</td>  
+          <td text-align="center", bgcolor="#4265f4"> <font color = "white">CHC</td>  
+        </tr>
+        <tr>
+          <td text-align="center"> St. Louis Cardinals </td>
+          <td text-align="center"> Chicago White Sox </td>            
+          <td text-align="center"> New York Yankees </td>  
+          <td text-align="center"> Boston Red Sox </td>  
+          <td text-align="center"> Chicago Cubs </td>
+        </tr>
+     </table>
+  </div>
+  <div class="barchart"></div>
+</head>
+
+<body>
+
+<script src="http://d3js.org/d3.v2.js"></script>
+
+
+<div class="chart">
+</div>
+
+<script>
+//http://bl.ocks.org/WillTurman/4631136
+
+chart("Theme-River-Data3.csv");
+//chart("data.csv");
+
+//Create array to store dates of data
+var datearray = [];
+//Create array to store colors used in graph
+var colorrange = [];
+
+function chart(csvpath, color) {
+    //Create array of colors
+    colors = ["#4265f4", "#f42734", "#0a0000", "#848383", "#f43f3f"];
+    linecolor = "#e6e6e6";
+
+    //Format date so we can later pull out year
+    var format = d3.time.format("%m/%d/%y");
+
+    //Set width and height of graph
+    var chartWidth = document.body.clientWidth - 100;
+    var chartHeight = 340;
+
+    var createarea = d3.svg.area()
+        .interpolate("basis")
+        .x(function(d) { return x(d.date); })
+        .y0(function(d) { return y(d.y0); })
+        .y1(function(d) { return y(d.y0 + d.y); });
+
+    //Append the SVG of class chart which is where we will show main graph
+    var svg = d3.select(".chart").append("svg")
+        .attr("width", chartWidth +  100)
+        .attr("height", chartHeight + 60)
+        .append("g")
+        //rotate y axis
+        .attr("transform", "translate(" + 50 + "," + 30 + ")");
+  //Create div that will hold the tooltip
+   var tooltip = d3.select("body")
+        .append("div")
+        .attr("class", "tooltip")
+        .style("top", "30px")
+        .style("left", "55px")
+        .style("z-index", "100")
+        .style("position", "absolute")
+        .style("visibility", "hidden");
+    //linear x and y scale that will become axis
+    var x = d3.time.scale()
+        .range([0, chartWidth]);
+    var y = d3.scale.linear()
+        .range([chartHeight - 30, 0]);
+    //Assign colors based on colors array
+    var z = d3.scale.ordinal()
+        .range(colors);
+
+    //Create x and y axis based and orient
+    var xAxis = d3.svg.axis()
+        .scale(x)
+        .orient("bottom")
+        .ticks(d3.time.years);
+    var yAxis = d3.svg.axis()
+        .scale(y);
+
+    //Read in data for graph
+    var streamriver = d3.csv(csvpath, function(data) {
+      data.forEach(function(d) {
+        //parse date so we can pull out year
+        d.date = format.parse(d.date);
+        d.value = +d.value;
+    });
+
+    //Define stack function that takes in value and returns value and x and y value to plot
+    var stack = d3.layout.stack()
+        .offset("wiggle")
+        .values(function(d) { return d.values; })
+        .x(function(d) { return d.date; })
+        .y(function(d) { return d.value; });
+
+    //take in data and organize/group by key using d3 nest function
+      var nest = d3.nest()
+        .key(function(d) { return d.key; });
+      var layers = stack(nest.entries(data));
+
+      //Start drawing, set domains specific to data
+      //Set x domain to the difference between the minimum and maximum dates
+      x.domain(d3.extent(data, function(d) { return d.date; }));
+      //Return max of values inputted and add to the baseline
+      y.domain([0, d3.max(data, function(d) { return d.y0 + d.y; })]);
+
+      //Create SVG of the "river" to plot data across time
+      svg.selectAll(".river")
+          .data(layers)
+          .enter().append("path")
+          .attr("class", "river")
+          //Create area with given values
+          .attr("d", function(d) { return createarea(d.values); })
+          //Attach fill color
+          .style("fill", function(d, i) { return z(i); });
+
+      //Attach g tag to print x and y axis 
+      svg.append("g")
+          .attr("class", "x axis")
+          .attr("transform", "translate(0," + chartHeight + ")")
+          .call(xAxis);
+      svg.append("g")
+          .attr("class", "y axis")
+          .call(yAxis.orient("left"));
+
+      //Change opacity of river based on hover
+      svg.selectAll(".river")
+        .attr("opacity", 1)
+        .on("mouseover", function(d, i) {
+          svg.selectAll(".river").transition()
+          .duration(200)
+          //Make all rivers other than the one being hover over opaque
+          .attr("opacity", function(d, b) {
+            return b != i ? 0.4 : 1;
+        })})
+
+        //Get mouse location for tooltip
+        .on("mousemove", function(d, i) {
+          mousexCoord = d3.mouse(this);
+          //Store the xCoordinate in mouseX
+          mousex = mousexCoord[0];
+          //Find data point that is associated with the mouse location by mapping to domain
+          var invertedx = x.invert(mousex);
+          //Get year associated with mouse location from full date
+          invertedx = invertedx.getFullYear();
+          var selected = d.values;
+          //Store date/year values of each data point in an array 
+          for (var k = 0; k < selected.length; k++) {
+            datearray[k] = selected[k].date
+            datearray[k] = datearray[k].getFullYear();
+          }
+
+          //Store current date and year
+          var mousedate = datearray.indexOf(invertedx);
+          var trueYear = 2016 - mousedate;
+          var value = d.values[mousedate].value;
+
+          //Create tooltip with year and other information
+          d3.select(this)
+          .classed("hover", true)
+          .attr("stroke", "#99999")
+          .attr("stroke-width", "1px"), 
+          tooltip.html( "<p>" + d.key + ", " + trueYear + ", " + value + "</p>" ).style("visibility", "visible").style("left", (d3.event.pageX + 10) + "px").style("top", (d3.event.pageY + 20) + "px").style(d);
+          
+        })
+        //When mouse leaves a particular river, hide tooltip and make path more opaque
+        .on("mouseout", function(d, i) {
+         svg.selectAll(".river")
+          .transition()
+          .duration(200)
+          .attr("opacity", "1");
+          d3.select(this)
+          .classed("hover", false)
+          .attr("stroke-width", "0px"), tooltip.html( "<p>" + d.key + "</p>" ).style("visibility", "hidden").attr("opacity", "0").attr();
+      })
+
+      //Create line that shows point on the chart 
+      //Create div that moves based on mouse location
+      var line = d3.select(".chart")
+            .append("div")
+            .style("background", "#595959")
+            .style("width", "1px")
+            .style("height", "340px")
+            .style("top", "160px")
+            .attr("class", "tooltip")
+            .style("position", "absolute")
+            .style("z-index", "20");
+
+      //Create mousemove functions for tooltip
+      //Select chart class
+      d3.select(".chart")
+          //Redraw line when mouse moves, comes into chart class 
+          .on("mousemove", function(){  
+            //store mouse location
+             mousex = d3.mouse(this);
+             //Store x value of line and add 7 pixels to put under mouse location
+             mousex = mousex[0] + 7;
+             line.style("left", mousex + "px" )})
+          .on("mouseover", function(){  
+             mousex = d3.mouse(this);
+             mousex = mousex[0] + 7;
+             line.style("left", mousex + "px")})
+    });
+}
+</script>
+<div>
+  <p style= "text-align:center"> <strong> Key Takeaways: </strong> Over time, home runs hit by various teams have fluctuated. While there have been season by season fluctuations within each team, there are also more general trends as the number of home runs hit overall increased around the early 2000s and then seem to be trending up again now</p>
+
+</div>
+</body>
